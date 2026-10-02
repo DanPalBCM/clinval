@@ -1,0 +1,30 @@
+cff-version: 1.2.0
+message: "If you use clinval in published work, please cite it as below."
+title: "clinval: a validation harness for clinical LLM extraction"
+abstract: >-
+  clinval is the evaluation layer between LLM eval frameworks, which score
+  prompts, and extraction libraries, which stop at extraction. It takes
+  note-level predictions from any extractor, aligns them against clinician
+  annotations, aggregates to patient-by-time-window units, computes agreement
+  with clustering-aware confidence intervals, and tags every residual
+  disagreement with a mechanism. A frozen-config protocol, enforced in code,
+  separates threshold tuning on a development split from out-of-sample
+  evaluation.
+type: software
+version: 1.0.0
+date-released: "2026-10-02"
+license: Apache-2.0
+repository-code: "https://github.com/DanPalBCM/clinval"
+url: "https://github.com/DanPalBCM/clinval"
+authors:
+  - family-names: Palacios
+    given-names: Daniel
+    affiliation: "Baylor College of Medicine"
+    email: daniel.palacios@bcm.edu
+keywords:
+  - clinical natural language processing
+  - large language models
+  - evaluation
+  - phenotyping
+  - inter-rater agreement
+  - validation

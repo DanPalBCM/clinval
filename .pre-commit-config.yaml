@@ -1,0 +1,48 @@
+# Install with: uv run pre-commit install
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-toml
+      - id: check-json
+        exclude: ^\.vscode/
+      - id: check-added-large-files
+        args: ["--maxkb=512"]
+      - id: check-merge-conflict
+      - id: detect-private-key
+      - id: mixed-line-ending
+        args: ["--fix=lf"]
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.9.6
+    hooks:
+      - id: ruff
+        args: [--fix]
+      - id: ruff-format
+
+  - repo: local
+    hooks:
+      # Structural guard, not a style check. Real clinical data must never
+      # enter this repository; the only committed data files live in the two
+      # synthetic directories.
+      - id: no-data-outside-synthetic-dirs
+        name: no data files outside examples/data and tests/fixtures
+        entry: >-
+          bash -c 'stray=$(git diff --cached --name-only --diff-filter=A
+          | grep -E "\.(csv|jsonl|ndjson|parquet|feather|dta|sav|xpt|xlsx|sas7bdat)$"
+          | grep -vE "^(examples/data/|tests/fixtures/)" || true);
+          if [ -n "$stray" ]; then
+            echo "Data files may only be added under examples/data/ or tests/fixtures/:";
+            echo "$stray"; exit 1; fi'
+        language: system
+        pass_filenames: false
+
+      - id: mypy
+        name: mypy
+        entry: uv run mypy
+        language: system
+        pass_filenames: false
+        files: ^src/

@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>clinval report · {{ config_hash[:12] }}</title>
+<style>
+  :root {
+    --fg: #1a1d21; --muted: #5c6670; --bg: #ffffff; --panel: #f6f8fa;
+    --line: #d8dee4; --accent: #0072B2; --warn-bg: #fff8e1; --warn-line: #e0a800;
+    --bad-bg: #fdecea; --bad-line: #c0392b; --ok-bg: #edf7ee; --ok-line: #2e7d32;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --fg: #e6e9ed; --muted: #9aa4af; --bg: #15181c; --panel: #1e2328;
+      --line: #333a42; --accent: #56B4E9; --warn-bg: #2e2a1a; --warn-line: #d4a017;
+      --bad-bg: #2e1d1b; --bad-line: #e06c5f; --ok-bg: #1b2a1d; --ok-line: #6aba72;
+    }
+    img { filter: brightness(.94); }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 2.2rem 1.4rem 5rem; background: var(--bg); color: var(--fg);
+    font: 15px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  main { max-width: 68rem; margin: 0 auto; }
+  h1 { font-size: 1.75rem; margin: 0 0 .25rem; letter-spacing: -.01em; }
+  h2 { font-size: 1.2rem; margin: 2.4rem 0 .7rem; padding-bottom: .3rem; border-bottom: 1px solid var(--line); }
+  h3 { font-size: 1.02rem; margin: 1.6rem 0 .5rem; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+  .sub { color: var(--muted); font-size: .88rem; margin-bottom: 1.6rem; }
+  code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .86em;
+         background: var(--panel); padding: .1em .35em; border-radius: 3px; }
+  table { border-collapse: collapse; width: 100%; margin: .6rem 0 1rem; font-size: .88rem; }
+  th, td { text-align: left; padding: .42rem .6rem; border-bottom: 1px solid var(--line); }
+  th { background: var(--panel); font-weight: 600; white-space: nowrap; }
+  tbody tr:hover { background: var(--panel); }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .note { padding: .8rem 1rem; border-left: 3px solid var(--accent); background: var(--panel);
+          border-radius: 0 4px 4px 0; margin: .9rem 0; font-size: .89rem; }
+  .warn { border-left-color: var(--warn-line); background: var(--warn-bg); }
+  .bad  { border-left-color: var(--bad-line);  background: var(--bad-bg); }
+  .ok   { border-left-color: var(--ok-line);   background: var(--ok-bg); }
+  .warn ul { margin: .4rem 0 0 1rem; padding: 0; }
+  img { max-width: 100%; height: auto; display: block; margin: 1rem 0; border-radius: 4px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: .8rem; margin: 1rem 0; }
+  .tile { background: var(--panel); border: 1px solid var(--line); border-radius: 5px; padding: .75rem .9rem; }
+  .tile .k { font-size: .72rem; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+  .tile .v { font-size: 1.3rem; font-weight: 600; font-variant-numeric: tabular-nums; margin-top: .15rem; }
+  .scroll { overflow-x: auto; }
+  footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--line);
+           color: var(--muted); font-size: .82rem; }
+</style>
+</head>
+<body>
+<main>
+
+<h1>clinval evaluation report</h1>
+<p class="sub">
+  clinval {{ version }} · unit <code>{{ config.unit.value }}</code> ·
+  split <code>{{ config.split.value }}</code> · config hash <code>{{ config_hash[:16] }}…</code>
+</p>
+
+<div class="grid">
+  <div class="tile"><div class="k">scored units</div><div class="v">{{ n_units }}</div></div>
+  <div class="tile"><div class="k">notes</div><div class="v">{{ meta.get('n_notes', 0) }}</div></div>
+  <div class="tile"><div class="k">patients</div><div class="v">{{ meta.get('n_patients', 0) }}</div></div>
+  <div class="tile"><div class="k">systems</div><div class="v">{{ systems | length }}</div></div>
+  <div class="tile"><div class="k">tagged errors</div><div class="v">{{ n_errors }}</div></div>
+</div>
+
+{% if frozen %}
+<div class="note ok">
+  <strong>Frozen config verified.</strong> Hash <code>{{ frozen.config_hash[:16] }}…</code>,
+  frozen {{ frozen.frozen_at.strftime('%Y-%m-%d %H:%M UTC') }}{% if frozen.git_commit %},
+  git <code>{{ frozen.git_commit[:12] }}</code>{% endif %}. The configuration has not
+  changed since it was locked, so these are out-of-sample numbers under a
+  pre-registered protocol.
+</div>
+{% else %}
+<div class="note bad">
+  <strong>These numbers are not an out-of-sample result.</strong> No frozen config was
+  supplied, so any threshold in this config may have been chosen on the same data it is
+  evaluated on. Run <code>clinval tune</code> → <code>clinval freeze</code> →
+  <code>clinval evaluate</code> to produce a defensible estimate.
+</div>
+{% endif %}
+
+{% if warnings %}
+<div class="note warn">
+  <strong>Warnings</strong>
+  <ul>{% for w in warnings %}<li>{{ w }}</li>{% endfor %}</ul>
+</div>
+{% endif %}
+
+{% if split_check %}
+{% if split_check.get('ok') %}
+<div class="note ok"><strong>Dev and test are disjoint.</strong>
+  {{ split_check.get('n_dev_patients', 0) }} dev patients,
+  {{ split_check.get('n_test_patients', 0) }} test patients, no shared notes.</div>
+{% else %}
+<div class="note bad"><strong>The splits overlap.</strong>
+  {{ split_check.get('n_shared_patients', 0) }} shared patient(s) and
+  {{ split_check.get('n_shared_notes', 0) }} shared note(s). A threshold tuned on dev was
+  then tested on the same patients, so the out-of-sample claim does not hold.</div>
+{% endif %}
+{% endif %}
+
+<h2>Provenance</h2>
+<div class="scroll">
+<table>
+  <tbody>
+    <tr><th>span matching</th><td><code>{{ config.matching.span.mode.value }}</code>, min overlap {{ config.matching.span.min_overlap }}</td></tr>
+    <tr><th>window</th><td>{{ config.window.size }} × {{ config.window.n_windows }}, anchored on {{ config.window.anchor }}, tie-break {{ config.window.tie_break.value }}</td></tr>
+    <tr><th>bootstrap</th><td>{{ config.bootstrap.n }} resamples, clustered by <code>{{ config.bootstrap.cluster_by }}</code>, seed {{ config.bootstrap.seed }}</td></tr>
+    <tr><th>consensus rule</th><td><code>{{ config.consensus }}</code></td></tr>
+    <tr><th>annotators</th><td>{{ meta.get('annotators', []) | join(', ') or 'not recorded' }}</td></tr>
+    <tr><th>predictions / annotations</th><td>{{ meta.get('n_predictions', 0) }} / {{ meta.get('n_annotations', 0) }}</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h2>Agreement</h2>
+{% if figures.get('metrics') %}<img src="{{ figures['metrics'] }}" alt="Agreement by system, with confidence intervals">{% endif %}
+<div class="scroll">
+<table>
+  <thead><tr><th>system</th><th>metric</th><th class="num">estimate</th><th class="num">95% CI</th><th>interval method</th></tr></thead>
+  <tbody>
+  {% for r in metric_rows %}
+    <tr><td>{{ r.system }}</td><td>{{ r.metric }}</td><td class="num">{{ r.point }}</td><td class="num">{{ r.ci }}</td><td><code>{{ r.method }}</code></td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+<div class="note">
+  Intervals are Wilson for metrics that are proportions of a fixed denominator, and
+  clustered percentile bootstrap for kappa, PABAK, and F1. The method is named per row
+  because the two are not interchangeable.
+</div>
+
+<h3>Confusion matrices</h3>
+{% if figures.get('confusion') %}<img src="{{ figures['confusion'] }}" alt="Confusion matrix per system">{% endif %}
+<div class="scroll">
+<table>
+  <thead><tr><th>system</th><th class="num">TP</th><th class="num">FP</th><th class="num">FN</th><th class="num">TN</th><th class="num">n</th></tr></thead>
+  <tbody>
+  {% for s in systems %}
+    <tr><td>{{ s }}</td><td class="num">{{ confusions[s].tp }}</td><td class="num">{{ confusions[s].fp }}</td><td class="num">{{ confusions[s].fn }}</td><td class="num">{{ confusions[s].tn }}</td><td class="num">{{ confusions[s].n }}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+
+<h3>Prediction coverage</h3>
+<div class="scroll">
+<table>
+  <thead><tr><th>system</th><th class="num">share of gold pairs predicted</th></tr></thead>
+  <tbody>
+  {% for s, c in coverage.items() %}
+    <tr><td>{{ s }}</td><td class="num">{{ fmt(c, 3) }}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+<div class="note">
+  Coverage below 1.0 means the system emitted no record for some gold pairs. Those are
+  counted as <strong>unscored</strong>, never as negatives — clinval cannot tell a
+  considered negative from an unprocessed note.
+</div>
+
+<h2>Per label</h2>
+{% if figures.get('per_label') %}<img src="{{ figures['per_label'] }}" alt="Per-label performance by system">{% endif %}
+<div class="scroll">
+<table>
+  <thead><tr>
+    <th>system</th><th>label</th><th class="num">n</th><th class="num">gold+</th>
+    <th class="num">TP</th><th class="num">FP</th><th class="num">FN</th><th class="num">TN</th>
+    {% for m in metric_names %}<th class="num">{{ m }}</th>{% endfor %}
+  </tr></thead>
+  <tbody>
+  {% for r in per_label_rows %}
+    <tr>
+      <td>{{ r.system }}</td><td>{{ r.label }}</td><td class="num">{{ r.n }}</td><td class="num">{{ r.gold_pos }}</td>
+      <td class="num">{{ r.tp }}</td><td class="num">{{ r.fp }}</td><td class="num">{{ r.fn }}</td><td class="num">{{ r.tn }}</td>
+      {% for m in metric_keys %}<td class="num">{{ r[m] }}</td>{% endfor %}
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+
+<h2>Error analysis</h2>
+{% if figures.get('error_mechanisms') %}<img src="{{ figures['error_mechanisms'] }}" alt="Disagreement counts by mechanism">{% endif %}
+<div class="scroll">
+<table>
+  <thead><tr><th>mechanism</th><th class="num">n</th><th class="num">share</th></tr></thead>
+  <tbody>
+  {% for r in mechanism_rows %}
+    <tr><td>{{ r.mechanism }}</td><td class="num">{{ r.n }}</td><td class="num">{{ r.share }}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+<div class="note">
+  A mechanism showing zero was checked and not found. A large <code>other</code> count
+  means the taxonomy is missing a mechanism for this data, not that the errors have no
+  cause.
+</div>
+
+{% if error_examples %}
+<h3>Examples</h3>
+<div class="scroll">
+<table>
+  <thead><tr><th>mechanism</th><th>id</th><th>system</th><th>label</th><th>type</th><th>evidence</th><th>why this tag</th></tr></thead>
+  <tbody>
+  {% for e in error_examples %}
+    <tr><td>{{ e.mechanism }}</td><td><code>{{ e.error_id }}</code></td><td>{{ e.system }}</td>
+        <td>{{ e.label }}</td><td>{{ e.error_type }}</td><td>{{ e.span_text }}</td><td>{{ e.reason }}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endif %}
+
+{% if comparisons %}
+<h2>System comparisons</h2>
+<div class="scroll">
+<table>
+  <thead><tr><th>A</th><th>B</th><th>metric</th><th class="num">A − B</th><th class="num">95% CI</th><th class="num">p</th><th class="num">shared units</th></tr></thead>
+  <tbody>
+  {% for c in comparisons %}
+    <tr><td>{{ c.system_a }}</td><td>{{ c.system_b }}</td><td>{{ c.metric }}</td>
+      <td class="num">{{ fmt(c.difference, digits) }}</td>
+      <td class="num">{% if c.ci_low is not none %}{{ fmt(c.ci_low, digits) }}–{{ fmt(c.ci_high, digits) }}{% else %}n/a{% endif %}</td>
+      <td class="num">{{ fmt(c.p_value, 3) }}</td><td class="num">{{ c.n_shared_units }}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+<div class="note">Paired clustered bootstrap on the units both systems scored; the pairing
+cancels unit difficulty. The p-value is a bootstrap approximation, not an exact test.</div>
+{% endif %}
+
+{% if iaa and iaa.get('pairs') %}
+<h2>Inter-annotator agreement</h2>
+<div class="scroll">
+<table>
+  <thead><tr><th>annotator pair</th><th class="num">units</th><th class="num">kappa</th><th class="num">PABAK</th><th class="num">observed agreement</th></tr></thead>
+  <tbody>
+  {% for pair, v in iaa['pairs'].items() %}
+    <tr><td>{{ pair }}</td><td class="num">{{ v.get('n_units', 0) }}</td>
+      <td class="num">{{ fmt(v.get('cohen_kappa'), digits) }}</td>
+      <td class="num">{{ fmt(v.get('pabak'), digits) }}</td>
+      <td class="num">{{ fmt(v.get('observed_agreement'), digits) }}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+<div class="note">The human ceiling. A system's kappa should be read against this, not
+against 1.0.</div>
+{% endif %}
+
+<h2>Cost and latency</h2>
+<div class="scroll">
+<table>
+  <thead><tr><th>system</th><th class="num">records</th><th class="num">token coverage</th>
+    <th class="num">tokens in</th><th class="num">tokens out</th>
+    <th class="num">cost ({{ cost.rates.currency }})</th><th class="num">mean latency (s)</th></tr></thead>
+  <tbody>
+  {% for name, s in cost.per_system.items() %}
+    <tr><td>{{ name }}</td><td class="num">{{ s.n_records }}</td>
+      <td class="num">{% if s.token_coverage is none %}n/a{% else %}{{ '%.0f%%' % (s.token_coverage * 100) }}{% endif %}</td>
+      <td class="num">{{ s.tokens_in }}</td><td class="num">{{ s.tokens_out }}</td>
+      <td class="num">{% if s.cost is none %}<em>unknown</em>{% elif s.cost_status == 'partial' %}≥{{ '%.4f' % s.cost }}{% else %}{{ '%.4f' % s.cost }}{% endif %}</td>
+      <td class="num">{{ fmt(s.latency_mean_s, 3) }}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% for name, s in cost.per_system.items() %}
+  {% if s.cost_note %}<div class="note warn"><strong>{{ name }}:</strong> {{ s.cost_note }}</div>{% endif %}
+{% endfor %}
+
+{% if tuning %}
+<h2>Tuning record</h2>
+<p>Objective <strong>{{ tuning.get('objective') }}</strong>, maximized over
+{{ tuning.get('n_evaluated', 0) }} candidate(s) on the dev split. Chosen
+<code>{{ tuning.get('best_params') }}</code> at {{ fmt(tuning.get('best_score'), 4) }}.</p>
+{% if tuning.get('is_flat') %}
+<div class="note warn">The objective varied by less than 0.005 across the entire grid, so
+the chosen value is effectively arbitrary on this dev set. Report it as a default rather
+than as a tuned finding.</div>
+{% endif %}
+{% endif %}
+
+<h2>How to read this</h2>
+<ul>
+  <li><strong>Units are {{ config.unit.value }}</strong>, not notes. One documented episode
+      anywhere in a window makes that window positive.</li>
+  <li><strong>Kappa and PABAK diverge on rare labels.</strong> Where they do, prevalence is
+      the explanation; both are in the table above.</li>
+  <li><strong>Unscored is not negative.</strong> See the coverage table.</li>
+  <li>clinval measures agreement. It does not certify clinical validity.</li>
+</ul>
+
+<footer>
+  Generated by clinval {{ version }}. All figures are static PNGs; this page contains no
+  JavaScript. Config hash <code>{{ config_hash }}</code>.
+</footer>
+
+</main>
+</body>
+</html>

@@ -1,0 +1,106 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "clinval"
+version = "1.0.0"
+description = "Validation harness for clinical LLM extraction: patient-window metrics, frozen dev protocol, error analysis."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "Apache-2.0" }
+authors = [{ name = "Daniel Palacios", email = "daniel.palacios@bcm.edu" }]
+keywords = [
+    "clinical-nlp",
+    "evaluation",
+    "llm",
+    "phenotyping",
+    "validation",
+    "inter-rater-agreement",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Healthcare Industry",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+]
+dependencies = [
+    "pydantic>=2.6",
+    "pandas>=2.1",
+    "numpy>=1.26",
+    "scipy>=1.11",
+    "scikit-learn>=1.4",
+    "typer>=0.12",
+    "rich>=13.7",
+    "pyyaml>=6.0",
+    "jinja2>=3.1",
+    "matplotlib>=3.8",
+    "rapidfuzz>=3.6",
+]
+
+[project.optional-dependencies]
+langextract = ["langextract>=1.7"]
+
+[project.urls]
+Homepage = "https://github.com/DanPalBCM/clinval"
+Repository = "https://github.com/DanPalBCM/clinval"
+Issues = "https://github.com/DanPalBCM/clinval/issues"
+
+[project.scripts]
+clinval = "clinval.cli:app"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=5.0",
+    "hypothesis>=6.100",
+    "statsmodels>=0.14",
+    # Installed for testing only, so the adapter is exercised against the real
+    # langextract data model rather than a hand-written stub. No test calls it
+    # over the network. See docs/decisions.md D-002.
+    "langextract>=1.7",
+    "ruff>=0.5",
+    "mypy>=1.10",
+    "pre-commit>=3.7",
+    "mkdocs-material>=9.5",
+    "mkdocstrings[python]>=0.25",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/clinval"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-q --strict-markers"
+markers = [
+    "live_llm: requires network and a real LLM API key; skipped unless --run-live-llm is passed",
+]
+filterwarnings = ["error::DeprecationWarning:clinval.*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["src", "tests"]
+# Recent ruff also formats Python inside Markdown fences. The docs use aligned
+# trailing comments and hand-wrapped call signatures for readability, so prose
+# files are out of scope here; `mkdocs build --strict` is what checks them.
+extend-exclude = ["*.md"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "C4", "RUF"]
+ignore = ["E501"]
+
+[tool.mypy]
+python_version = "3.11"
+packages = ["clinval"]
+mypy_path = "src"
+ignore_missing_imports = true
+warn_unused_ignores = false
+
+[tool.coverage.run]
+source = ["clinval"]

@@ -1,0 +1,127 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: test (py${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+
+      - name: Set up Python ${{ matrix.python-version }}
+        run: uv python install ${{ matrix.python-version }}
+
+      - name: Install the project
+        run: uv sync --all-extras
+
+      - name: Run tests
+        # Live-LLM tests stay skipped: CI makes no network calls to a model.
+        run: uv run pytest -q --cov=clinval --cov-report=term-missing
+
+  lint:
+    name: lint and types
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+
+      - name: Install the project
+        run: uv sync --all-extras
+
+      - name: ruff check
+        run: uv run ruff check .
+
+      - name: ruff format
+        run: uv run ruff format --check .
+
+      - name: mypy
+        run: uv run mypy
+
+  demo:
+    name: demo runs end to end
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+
+      - name: Install the project
+        run: uv sync
+
+      # The demo is the project's own acceptance test: it runs the full
+      # protocol on the committed toy data and exits non-zero if the
+      # tamper-detection check fails to fire.
+      - name: Run the demo
+        run: uv run python demo.py
+
+      - name: Check the report was produced
+        run: |
+          test -s demo_output/report/report.html
+          test -s demo_output/report/metrics.json
+          test -s demo_output/report/errors.csv
+          test -s demo_output/report/figures/metrics.png
+
+      - name: Upload the demo report
+        uses: actions/upload-artifact@v4
+        with:
+          name: demo-report
+          path: demo_output/
+          retention-days: 14
+
+  no-real-data:
+    name: no patient data committed
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Install the project
+        run: uv sync
+
+      # Structural guard, not a vibe check: every sentence in every generated
+      # note must come from the fixed sentence bank, and identifiers must be
+      # sequential placeholders.
+      - name: Assert the only data is synthetic
+        run: uv run pytest tests/test_synth.py -q -k "NoRealData or SpanCorrectness"
+
+      - name: Fail on data files outside the allowed directories
+        run: |
+          stray=$(git ls-files \
+            | grep -E '\.(csv|jsonl|ndjson|parquet|feather|dta|sav|xpt|xlsx|sas7bdat)$' \
+            | grep -vE '^(examples/data/|tests/fixtures/)' || true)
+          if [ -n "$stray" ]; then
+            echo "Data files found outside examples/data/ and tests/fixtures/:"
+            echo "$stray"
+            exit 1
+          fi
+          echo "No data files outside the allowed synthetic directories."
