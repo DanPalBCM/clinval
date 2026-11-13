@@ -4,6 +4,7 @@
 
 [![tests](https://github.com/DanPalBCM/clinval/actions/workflows/ci.yml/badge.svg)](https://github.com/DanPalBCM/clinval/actions/workflows/ci.yml)
 [![PyPI](https://img.shields.io/pypi/v/clinval)](https://pypi.org/project/clinval/)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.24203324.svg)](https://doi.org/10.5281/zenodo.24203324)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue)](https://www.python.org/downloads/)
 [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-green)](https://github.com/DanPalBCM/clinval/blob/main/LICENSE)
 
@@ -350,7 +351,8 @@ See [`CITATION.cff`](https://github.com/DanPalBCM/clinval/blob/main/CITATION.cff
   title   = {clinval: a validation harness for clinical LLM extraction},
   version = {1.0.0},
   year    = {2026},
-  url     = {https://github.com/DanPalBCM/clinval}
+  doi     = {10.5281/zenodo.24203324},
+  url     = {https://doi.org/10.5281/zenodo.24203324}
 }
 ```
 
