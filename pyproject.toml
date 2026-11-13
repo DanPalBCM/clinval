@@ -9,7 +9,7 @@ description = "Validation harness for clinical LLM extraction: patient-window me
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "Apache-2.0" }
-authors = [{ name = "Daniel Palacios", email = "daniel.palacios@bcm.edu" }]
+authors = [{ name = "Daniel Palacios", email = "danielpalaciosusa2015@hotmail.com" }]
 keywords = [
     "clinical-nlp",
     "evaluation",
@@ -49,6 +49,7 @@ langextract = ["langextract>=1.7"]
 Homepage = "https://github.com/DanPalBCM/clinval"
 Repository = "https://github.com/DanPalBCM/clinval"
 Issues = "https://github.com/DanPalBCM/clinval/issues"
+Changelog = "https://github.com/DanPalBCM/clinval/blob/main/CHANGELOG.md"
 
 [project.scripts]
 clinval = "clinval.cli:app"

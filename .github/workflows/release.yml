@@ -1,0 +1,76 @@
+name: release
+
+# Publishing uses PyPI Trusted Publishing (OIDC): no API token is stored
+# anywhere. PyPI trusts exactly this workflow file and the `pypi` GitHub
+# environment below.
+#
+#   Run manually (Actions tab -> release -> Run workflow) -> build + check only
+#   Publish a GitHub Release                              -> PyPI
+#
+# A version on PyPI can never be re-uploaded, so the build job refuses to
+# continue unless the release tag matches the version in pyproject.toml.
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: build and check distributions
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Tag must match the package version
+        if: github.event_name == 'release'
+        run: |
+          version=$(grep -m1 '^version = ' pyproject.toml | cut -d'"' -f2)
+          tag="${GITHUB_REF_NAME}"
+          echo "pyproject version: ${version}   release tag: ${tag}"
+          if [ "${tag}" != "v${version}" ]; then
+            echo "Release tag ${tag} does not match v${version}"
+            exit 1
+          fi
+
+      - name: Build sdist and wheel
+        run: uv build
+
+      - name: Check package metadata
+        run: uvx twine check --strict dist/*
+
+      - name: Smoke-test the wheel in a clean environment
+        run: |
+          uv venv /tmp/smoke --python 3.11
+          uv pip install --python /tmp/smoke/bin/python dist/*.whl
+          cd /tmp
+          /tmp/smoke/bin/python -c "import clinval; print('clinval', clinval.__version__)"
+          /tmp/smoke/bin/clinval --help
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  publish-pypi:
+    name: publish to PyPI
+    if: github.event_name == 'release'
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/clinval
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      - uses: pypa/gh-action-pypi-publish@release/v1

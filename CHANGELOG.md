@@ -4,7 +4,7 @@ All notable changes to clinval are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versioning
 follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.0.0] — 2026-10-02
+## [1.0.0] — 2026-11-13
 
 First release.
 
@@ -127,6 +127,8 @@ First release.
   demonstrates the tamper check firing.
 - CI on Python 3.11, 3.12, and 3.13, including a job that fails if any data
   file appears outside the synthetic directories.
+- Published to PyPI through Trusted Publishing (`.github/workflows/release.yml`)
+  and archived on Zenodo with a DOI; documentation deployed to GitHub Pages.
 
 ### Known limitations
 
@@ -139,7 +141,5 @@ First release.
   disagreements; they never change a score.
 - Bootstrap p-values are approximations, not exact tests.
 - `index_date` is the only window anchor.
-- Not published to PyPI, and no documentation site is deployed; see
-  `docs/decisions.md` D-018.
 
 [1.0.0]: https://github.com/DanPalBCM/clinval/releases/tag/v1.0.0

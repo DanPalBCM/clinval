@@ -12,7 +12,7 @@ abstract: >-
   evaluation.
 type: software
 version: 1.0.0
-date-released: "2026-10-02"
+date-released: "2026-11-13"
 license: Apache-2.0
 repository-code: "https://github.com/DanPalBCM/clinval"
 url: "https://github.com/DanPalBCM/clinval"
@@ -20,7 +20,7 @@ authors:
   - family-names: Palacios
     given-names: Daniel
     affiliation: "Baylor College of Medicine"
-    email: daniel.palacios@bcm.edu
+    email: danielpalaciosusa2015@hotmail.com
 keywords:
   - clinical natural language processing
   - large language models

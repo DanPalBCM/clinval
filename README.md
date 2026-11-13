@@ -3,8 +3,9 @@
 **The missing evaluation layer for clinical LLM extraction.**
 
 [![tests](https://github.com/DanPalBCM/clinval/actions/workflows/ci.yml/badge.svg)](https://github.com/DanPalBCM/clinval/actions/workflows/ci.yml)
+[![PyPI](https://img.shields.io/pypi/v/clinval)](https://pypi.org/project/clinval/)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue)](https://www.python.org/downloads/)
-[![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-green)](LICENSE)
+[![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-green)](https://github.com/DanPalBCM/clinval/blob/main/LICENSE)
 
 LLM extraction is easy to demo and hard to trust. Given note-level predictions
 from any extractor, clinval answers the questions a reviewer will actually ask:
@@ -21,6 +22,16 @@ It is deliberately not an eval framework and not an extraction library:
 
 **clinval never calls an LLM.** It consumes an extractor's output, which is what
 makes it extractor-agnostic and what makes its results reproducible.
+
+## Install
+
+```bash
+pip install clinval                  # core
+pip install "clinval[langextract]"   # plus the LangExtract adapter
+```
+
+Python 3.11 or newer. Installing the package also installs the `clinval`
+command; run `clinval --help` to list the subcommands.
 
 ---
 
@@ -240,7 +251,7 @@ self-defeating.
   mechanism for your data.
 - **Cost depends on what your extractor reports.** langextract exposes no token
   counts at all, so its cost is reported as `unknown` rather than zero (see
-  [`docs/decisions.md`](docs/decisions.md) D-003). Set `RunMeta.call_id` if one
+  [`docs/decisions.md`](https://github.com/DanPalBCM/clinval/blob/main/docs/decisions.md) D-003). Set `RunMeta.call_id` if one
   model call produces several records, or the cost is multiplied by the number
   of labels.
 - **Bootstrap p-values are approximations**, not exact tests.
@@ -274,7 +285,7 @@ find the bad row.
 `fhirground`'s `Condition:K59.1` works unchanged — see
 `tests/test_integration.py::TestFhirgroundInterop`.
 
-Full schema reference: [`docs/formats.md`](docs/formats.md).
+Full schema reference: [`docs/formats.md`](https://github.com/DanPalBCM/clinval/blob/main/docs/formats.md).
 
 ---
 
@@ -325,13 +336,13 @@ idempotence, interval coverage, and freeze-hash sensitivity.
 
 Every decision that departs from the specification, resolves an ambiguity, or
 rests on something verified about an external library is recorded in
-[`docs/decisions.md`](docs/decisions.md).
+[`docs/decisions.md`](https://github.com/DanPalBCM/clinval/blob/main/docs/decisions.md).
 
 ---
 
 ## Citing
 
-See [`CITATION.cff`](CITATION.cff).
+See [`CITATION.cff`](https://github.com/DanPalBCM/clinval/blob/main/CITATION.cff).
 
 ```bibtex
 @software{clinval,
@@ -345,5 +356,5 @@ See [`CITATION.cff`](CITATION.cff).
 
 ## License
 
-[Apache-2.0](LICENSE). Chosen for the patent grant and its acceptability in
+[Apache-2.0](https://github.com/DanPalBCM/clinval/blob/main/LICENSE). Chosen for the patent grant and its acceptability in
 health-enterprise settings, consistent with the sibling projects.
